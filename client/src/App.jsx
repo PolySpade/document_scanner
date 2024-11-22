@@ -4,31 +4,22 @@ import viteLogo from '/vite.svg'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
+    <div className='flex justify-center flex-col'>
       <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        ScanPro
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+      <div>
+        Crop your documents at the click of a button!
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+      
+      <div className='flex p-10 justify-center flex-col bg-base-300 rounded-xl'>
+        <p>Drag your image file here</p>
+        <p>OR</p>
+        <p className=' font-bold text-lg '>Upload your image file here</p>
+
+      </div>
+  </div>
   )
 }
 
