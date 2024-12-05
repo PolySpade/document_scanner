@@ -38,18 +38,14 @@ The **Document Processing Web App** is a tool designed to upload and process doc
 
 2. Activate the virtual environment:
 
-   ```bash
-
+   ```
    .\venv\Scripts\activate
-
    ```
 
 3. Run the Flask server:
 
-   ```bash
-
+   ```
    python server.py
-
    ```
 
    The server will be available at `http://localhost:5000`.
@@ -57,16 +53,12 @@ The **Document Processing Web App** is a tool designed to upload and process doc
 
 1. Navigate to the `frontend` folder.
 2. Install dependencies:
-   ```bash
-
+   ```
    npm install
-
    ```
 3. Start the React development server:
-   ```bash
-
+   ```
    npm run dev
-
    ```
    The app will be available at `http://localhost:3000`.
 ---
