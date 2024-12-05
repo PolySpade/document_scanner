@@ -2,6 +2,7 @@ import React from 'react'
 import Landing from '../pages/Landing'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import Layout from './Layout'
+import AboutUs from '../pages/AboutUs'
 
 const router = createBrowserRouter([
     {
@@ -11,6 +12,10 @@ const router = createBrowserRouter([
             {
                 path: "", 
                 element: <Landing />
+            },
+            {
+                path:"about",
+                element:<AboutUs/>
             }
         ]
     }

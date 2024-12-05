@@ -6,17 +6,21 @@ import pytesseract
 pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
 import numpy as np
 from flask import Flask, jsonify, request, send_from_directory
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
 UPLOAD_FOLDER = 'public/uploads'
 TRANSFORMED_FOLDER = 'public/transformed'
 DRAFT_FOLDER = 'public/drafts'
+TEXT_FOLDER = 'public/texts'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 app = Flask(__name__)
+cors = CORS(app, resources={r"/*": {"origins": "*"}})
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['TRANSFORMED_FOLDER'] = TRANSFORMED_FOLDER
 app.config['DRAFT_FOLDER'] = DRAFT_FOLDER
+app.config['TEXT_FOLDER'] = TEXT_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -170,7 +174,7 @@ def document_scanner(image_path,filename):
     # Store the text file
     # Extract file name
     text_filepath = os.path.splitext(filename)[0] + ".txt"
-    text_draft_path = os.path.join(app.config['DRAFT_FOLDER'], text_filepath) 
+    text_draft_path = os.path.join(app.config['TEXT_FOLDER'], text_filepath) 
     with open(text_draft_path, "w") as file:
         file.write(extracted_text)
 
@@ -184,90 +188,6 @@ def document_scanner(image_path,filename):
 def allowed_file(filename):
     return "." in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-#def document_scanner(image_path, output_path):
-    # Load the image
-    image = cv.imread(image_path)
-    orig = image.copy()
-    gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-
-    # Apply Gaussian blur and edge detection
-    gray = cv.GaussianBlur(gray, (5, 5), 0)
-    edged = cv.Canny(gray, 75, 200)
-
-    # Find contours
-    contours, _ = cv.findContours(edged.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
-    contours = sorted(contours, key=cv.contourArea, reverse=True)[:5]
-
-    # Look for a contour that approximates a rectangle
-    for contour in contours:
-        peri = cv.arcLength(contour, True)
-        approx = cv.approxPolyDP(contour, 0.02 * peri, True)
-        if len(approx) == 4:
-            screen_contour = approx
-            break
-    else:
-        return None  # No rectangle detected
-
-    # Transform the perspective
-    pts = screen_contour.reshape(4, 2)
-    rect = np.zeros((4, 2), dtype="float32")
-
-    # Determine the order of points: top-left, top-right, bottom-right, bottom-left
-    s = pts.sum(axis=1)
-    rect[0] = pts[np.argmin(s)]
-    rect[2] = pts[np.argmax(s)]
-
-    diff = np.diff(pts, axis=1)
-    rect[1] = pts[np.argmin(diff)]
-    rect[3] = pts[np.argmax(diff)]
-
-    # Calculate the width and height of the new image
-    (tl, tr, br, bl) = rect
-    width_a = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
-    width_b = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
-    max_width = max(int(width_a), int(width_b))
-
-    height_a = np.sqrt(((tr[0] - br[0]) ** 2) + ((tr[1] - br[1]) ** 2))
-    height_b = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
-    max_height = max(int(height_a), int(height_b))
-
-    # Define the destination points for the perspective transform
-    dst = np.array([
-        [0, 0],
-        [max_width - 1, 0],
-        [max_width - 1, max_height - 1],
-        [0, max_height - 1]], dtype="float32")
-
-    # Perform the perspective transform
-    matrix = cv.getPerspectiveTransform(rect, dst)
-    warped = cv.warpPerspective(orig, matrix, (max_width, max_height))
-
-    # Convert to grayscale and enhance
-    warped = cv.cvtColor(warped, cv.COLOR_BGR2GRAY)
-    _, scanned = cv.threshold(warped, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-
-    # Save the scanned image
-    cv.imwrite(output_path, scanned)
-    return output_path
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #########################################
 # Routes
@@ -296,10 +216,6 @@ def upload_file():
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
 
-        # Perform document scanning
-        # transformed_filename = f"{filename}"
-        # transformed_path = os.path.join(app.config['TRANSFORMED_FOLDER'], transformed_filename)
-
         result = document_scanner(filepath,filename)
         if not result:
             return jsonify({'error': 'Could not detect a document in the image'}), 400
@@ -312,6 +228,40 @@ def upload_file():
 def download_file(name):
     return send_from_directory(app.config["TRANSFORMED_FOLDER"], name)
 
+@app.route('/drafts/<name>')
+def download_draft_file(name):
+    return send_from_directory(app.config["DRAFT_FOLDER"], name)
+
+@app.route('/texts/<name>')
+def download_text_file(name):
+    text_filepath = os.path.splitext(name)[0] + ".txt"
+    return send_from_directory(app.config["TEXT_FOLDER"], text_filepath)
+
+@app.route('/delete', methods=['DELETE'])
+def delete_all_files():
+    folders = [
+        app.config["TRANSFORMED_FOLDER"],
+        app.config["DRAFT_FOLDER"],
+        app.config["TEXT_FOLDER"],
+        app.config["UPLOAD_FOLDER"]
+    ]
+
+    deleted_files = {}
+
+    for folder in folders:
+        if os.path.exists(folder):
+            files = os.listdir(folder)
+            for file in files:
+                file_path = os.path.join(folder, file)
+                try:
+                    os.remove(file_path)  # Remove the file
+                    deleted_files.setdefault(folder, []).append(file)
+                except Exception as e:
+                    return jsonify({"error": f"Failed to delete {file}: {str(e)}"}), 500
+
+    return jsonify({
+        "message": "All files deleted successfully"
+    }), 200
 
 if __name__ == "__main__":
     app.run(debug=False)
