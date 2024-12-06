@@ -104,3 +104,7 @@ The **Document Processing Web App** is a tool designed to upload and process doc
 This project is open-source and licensed under the MIT License.
 
 ---
+![ui_2](https://github.com/user-attachments/assets/0baa94a5-1142-4dd0-828b-965aa8719b45)
+![ui_1](https://github.com/user-attachments/assets/22ca82da-e6dc-4bb5-a40e-300c512bd0b9)
+![ui-3](https://github.com/user-attachments/assets/c2ffdb80-525b-4e58-a9bd-860cc88cd07f)
+
