@@ -45,12 +45,18 @@ def find_Contours(image):
     paper_outline = None
     for contour in contours:
         perimeter = cv2.arcLength(contour, True)
-        # approximate the contour
-        approximation = cv2.approxPolyDP(contour, 0.01 * perimeter, True)
+        approx = cv2.approxPolyDP(contour, 0.01 * perimeter, True)
 
-        # if our contour has 4 points, then surely, it should be the paper
-        if len(approximation) == 4:
-            paper_outline = approximation
+        # Filter contours by area
+        area = cv2.contourArea(contour)
+        if area < 5000:  # Minimum area threshold
+            continue
+
+        # Check aspect ratio
+        x, y, w, h = cv2.boundingRect(approx)
+        aspect_ratio = float(w) / h
+        if 0.5 < aspect_ratio < 2.0 and len(approx) == 4:
+            paper_outline = approx
             break
 
     return paper_outline
@@ -95,13 +101,13 @@ def warp_image(image, pts):
     return warped
 
 def enhance_image(warped):
-    contrast_factor = 1.2  
+    contrast_factor = 1.1  
     enhanced_contrast = cv2.convertScaleAbs(warped, alpha=contrast_factor, beta=0)
     
-    brightness_factor = -20 
+    brightness_factor = -5 
     adjusted_brightness = cv2.convertScaleAbs(enhanced_contrast, alpha=1, beta=brightness_factor)
     
-    saturation_factor = 1.5
+    saturation_factor = 1.1
     # Convert BGR to HSV
     hsv = cv2.cvtColor(adjusted_brightness, cv2.COLOR_BGR2HSV)
     h, s, v = cv2.split(hsv)
@@ -153,36 +159,39 @@ def document_scanner(image_path,filename):
     gray_scaled = cv2.GaussianBlur(gray_scaled, (7,7), 0)
 
     # Dilate the image to remove holes
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(9,9))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(3,3))
     dilated = cv2.morphologyEx(gray_scaled, cv2.MORPH_CLOSE, kernel)
 
     # Find edges using the dilated image
     edged_img = cv2.Canny(dilated,0,84)
     paper_outline = find_Contours(edged_img)
     
-    # Store it in Draft Folder to Show it to User which lines has been drawn
-    image_draft_path = os.path.join(app.config['DRAFT_FOLDER'], filename) 
-    cv2.drawContours(image,[paper_outline],-1,(255,255,0),2)  
-    cv2.imwrite(image_draft_path, image)
-    
-    warped = warp_image(orig, paper_outline.reshape(4, 2) * (1 / ratio))
+    if paper_outline is not None:
+        # Store it in Draft Folder to Show it to User which lines has been drawn
+        image_draft_path = os.path.join(app.config['DRAFT_FOLDER'], filename) 
+        cv2.drawContours(image,[paper_outline],-1,(255,255,0),2)  
+        cv2.imwrite(image_draft_path, image)
+        
+        warped = warp_image(orig, paper_outline.reshape(4, 2) * (1 / ratio))
 
-    enhanced_warped = enhance_image(warped)
+        enhanced_warped = enhance_image(warped)
 
-    extracted_text = extract_text(enhanced_warped)
+        extracted_text = extract_text(enhanced_warped)
 
-    # Store the text file
-    # Extract file name
-    text_filepath = os.path.splitext(filename)[0] + ".txt"
-    text_draft_path = os.path.join(app.config['TEXT_FOLDER'], text_filepath) 
-    with open(text_draft_path, "w") as file:
-        file.write(extracted_text)
+        # Store the text file
+        # Extract file name
+        text_filepath = os.path.splitext(filename)[0] + ".txt"
+        text_draft_path = os.path.join(app.config['TEXT_FOLDER'], text_filepath) 
+        with open(text_draft_path, "w") as file:
+            file.write(extracted_text)
 
-    # Store the final image output
+        # Store the final image output
 
-    transformed_path = os.path.join(app.config['TRANSFORMED_FOLDER'], filename)
-    cv2.imwrite(transformed_path, enhanced_warped)
-    return True
+        transformed_path = os.path.join(app.config['TRANSFORMED_FOLDER'], filename)
+        cv2.imwrite(transformed_path, enhanced_warped)
+        return True
+    else:
+        return False
 
 
 def allowed_file(filename):
