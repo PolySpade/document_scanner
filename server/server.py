@@ -25,6 +25,9 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(TRANSFORMED_FOLDER, exist_ok=True)
+os.makedirs(TEXT_FOLDER, exist_ok=True)
+os.makedirs(DRAFT_FOLDER, exist_ok=True)
+
 
 #########################################
 # Functions
