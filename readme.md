@@ -31,6 +31,12 @@ The **Document Processing Web App** is a tool designed to upload and process doc
   - `send_from_directory` for file serving
 - **Hosting**: Local server on `http://localhost:5000`
 ---
+## Image Processing and OCR Libraries
+- `cv2` for image processing
+- `imutils` for simplifying image processing tasks
+- `pytesseract` for integrating with Tesseract OCR to extract text from images
+- `numpy` for numerical operations
+---
 ## Installation and Setup
 ### **Backend Setup**
 
