@@ -13,6 +13,10 @@
 ```
 .\venv\Scripts\activate
 ```
+**Install the Libraries**
+```
+pip install -r requirements.txt
+```
 **Start server**
 ```
 python server.py
